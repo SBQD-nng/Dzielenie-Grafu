@@ -20,6 +20,15 @@ static int* readArray(FILE* stream, int* outLen, bool canBeEmpty);
 // reads char from with BufferedReader
 static char readChar(BufferedReader* reader);
 
+// saves array to file in text format
+static void saveTextArray(FILE* stream, int* array, int arrayLen);
+
+// saves array to file in binary format
+static void saveBinArray(FILE* stream, int* array, int arrayLen);
+
+// write int in little endian order to output stream
+static void writeInt(FILE* stream, int val);
+
 // prints format error message and exits
 static void formatError();
 
@@ -77,14 +86,32 @@ File* file_load(char* name)
 	return file;
 }
 
-void file_saveText(char* name, int successes)
+void file_save(File* file, char* name, int successes, bool binMode)
 {
+	FILE* stream = name != NULL ? fopen(name, binMode ? "wb" : "w") : stdout;
+	if (stream == NULL)
+	{
+		fprintf(stderr, "Błąd otwierania pliku wyjściowego\n");
+		exit(-1);
+	}
 
-}
+	void (*saveArray)(FILE*, int*, int) = binMode ? saveBinArray : saveTextArray;
 
-void file_saveBin(char* name)
-{
+	if (!binMode)
+	{
+		fprintf(stream, "%d\n", successes);
+	}
 
+	int maxNodes[1] = {file->maxNodes};
+	saveArray(stream, maxNodes, 1);
+	saveArray(stream, file->xCoords, file->xCoords_len);
+	saveArray(stream, file->xCoordsStart, file->xCoordsStart_len);
+	saveArray(stream, file->conns, file->conns_len);
+
+	for (int i = 0; i < file->connStarts_arrayCount; i++)
+	{
+		saveArray(stream, file->connStarts[i], file->connStarts_lens[i]);
+	}
 }
 
 int* readArray(FILE* stream, int* outLen, bool canBeEmpty)
@@ -179,6 +206,35 @@ char readChar(BufferedReader* reader)
 
 	reader->bufPtr++;
 	return reader->buf[reader->bufPtr];
+}
+
+void saveTextArray(FILE* stream, int* array, int arrayLen)
+{
+	for (int i = 0; i < arrayLen; i++)
+	{
+		fprintf(stream, "%d;", array[i]);
+	}
+	fprintf(stream, "\n");
+}
+
+void saveBinArray(FILE* stream, int* array, int arrayLen)
+{
+	for (int i = 0; i < arrayLen; i++)
+	{
+		writeInt(stream, array[i]);
+	}
+	writeInt(stream, 0xFFFFFFFF);
+}
+
+void writeInt(FILE* stream, int val)
+{
+	char bytes[4] = {
+		val & 0xFF,
+		(val >> 8) & 0xFF,
+		(val >> 16) & 0xFF,
+		(val >> 24) & 0xFF,
+	};
+	fwrite(bytes, 1, 4, stream);
 }
 
 void formatError()

@@ -1,6 +1,8 @@
 #ifndef _ARGUMENTS_H_
 #define _ARGUEMNTS_H_
 
+#include <stdbool.h>
+
 typedef struct
 {
 	int maxNodes;
@@ -23,10 +25,8 @@ typedef struct
 // loads file in text format
 extern File* file_load(char* name);
 
-// saves file to text format (with line containing number of successes)
-extern void file_saveText(char* name, int successes);
-
-// saves file to binary format
-extern void file_saveBin(char* name);
+// saves file in text or binary mode (with text mode starting with line containing number of successes)
+// if name == NULL it's saved to stdout
+extern void file_save(File* file, char* name, int successes, bool binMode);
 
 #endif
