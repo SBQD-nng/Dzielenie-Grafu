@@ -23,10 +23,10 @@ typedef struct
 
 
 // loads file in text format
-extern File* file_load(char* name);
+extern File* file_load(const char* name);
 
 // saves file in text or binary mode (with text mode starting with line containing number of successes)
 // if name == NULL it's saved to stdout
-extern void file_save(File* file, char* name, int successes, bool binMode);
+extern void file_save(File* file, const char* name, int successes, bool binMode);
 
 #endif

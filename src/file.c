@@ -30,10 +30,10 @@ static void saveBinArray(FILE* stream, int* array, int arrayLen);
 static void writeInt(FILE* stream, int val);
 
 // prints format error message and exits
-static void formatError();
+static void formatError(int numer);
 
 
-File* file_load(char* name)
+File* file_load(const char* name)
 {
 	FILE* stream = fopen(name, "r");
 	if (stream == NULL)
@@ -50,7 +50,7 @@ File* file_load(char* name)
 	line = readArray(stream, &lineLen, false);
 	if (lineLen != 1)
 	{
-		formatError();
+		formatError(1);
 	}
 	file->maxNodes = line[0];
 	free(line);
@@ -72,7 +72,7 @@ File* file_load(char* name)
 
 		int arrayCount = file->connStarts_arrayCount;
 		file->connStarts = realloc(file->connStarts, (arrayCount + 1) * sizeof(int*));
-		file->connStarts_lens = realloc(file->connStarts, (arrayCount + 1) * sizeof(int));
+		file->connStarts_lens = realloc(file->connStarts_lens, (arrayCount + 1) * sizeof(int));
 		file->connStarts[arrayCount] = line;
 		file->connStarts_lens[arrayCount] = lineLen;
 
@@ -80,13 +80,13 @@ File* file_load(char* name)
 	}
 	if (file->connStarts_arrayCount == 0)
 	{
-		formatError();
+		formatError(2);
 	}
 
 	return file;
 }
 
-void file_save(File* file, char* name, int successes, bool binMode)
+void file_save(File* file, const char* name, int successes, bool binMode)
 {
 	FILE* stream = name != NULL ? fopen(name, binMode ? "wb" : "w") : stdout;
 	if (stream == NULL)
@@ -144,12 +144,12 @@ int* readArray(FILE* stream, int* outLen, bool canBeEmpty)
 
 			if (num != (int)num)
 			{
-				formatError();
+				formatError(3);
 			}
 		}
 		else if (ch == ';' || ch == '\n')
 		{
-			if (num == -1)
+			if (num != -1)
 			{
 				if (arrayLen == arrayAllocSize)
 				{
@@ -169,7 +169,7 @@ int* readArray(FILE* stream, int* outLen, bool canBeEmpty)
 		}
 		else
 		{
-			formatError();
+			formatError(4);
 		}
 	}
 
@@ -183,7 +183,7 @@ int* readArray(FILE* stream, int* outLen, bool canBeEmpty)
 		}
 		else
 		{
-			formatError();
+			formatError(5);
 		}
 	}
 
@@ -237,8 +237,8 @@ void writeInt(FILE* stream, int val)
 	fwrite(bytes, 1, 4, stream);
 }
 
-void formatError()
+void formatError(int numer)
 {
-	fprintf(stderr, "Błąd formatu pliku wejściowego\n");
+	fprintf(stderr, "Błąd formatu pliku wejściowego %d\n", numer);
 	exit(-1);
 }
