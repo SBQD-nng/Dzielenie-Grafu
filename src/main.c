@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "arguments.h"
 #include "file.h"
+#include "graph.h"
 
 int main(int argc, char** argv)
 {
@@ -13,5 +14,7 @@ int main(int argc, char** argv)
 
 	File* file = file_load(args->inputFile);
 	file_save(file, args->outputFile, 123, args->useBinaryMode);
+
+	Graphs* graphs = graphs_init(file);
 	return 0;
 }

@@ -1,5 +1,5 @@
 #ifndef _ARGUMENTS_H_
-#define _ARGUEMNTS_H_
+#define _ARGUMENTS_H_
 
 #include <stdbool.h>
 
