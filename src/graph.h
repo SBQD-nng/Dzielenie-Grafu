@@ -26,4 +26,7 @@ typedef struct
 // initializes graphs
 extern Graphs* graphs_init(File* file);
 
+// saves connections from Graphs to File structure
+extern void graphs_saveConns(Graphs* graphs, File* file);
+
 #endif

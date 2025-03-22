@@ -16,5 +16,7 @@ int main(int argc, char** argv)
 	file_save(file, args->outputFile, 123, args->useBinaryMode);
 
 	Graphs* graphs = graphs_init(file);
+	graphs_saveConns(graphs, file);
+	file_save(file, "graf_przetworzony.out", 999, args->useBinaryMode);
 	return 0;
 }

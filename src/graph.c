@@ -22,6 +22,9 @@ static Node* addNode(Graph* graph, int id);
 // Show message and exit because of invalid graph structure
 static void graphError(const char* message);
 
+// Show message that something went wrong with program
+static void programError(const char* module, int line);
+
 
 Graphs* graphs_init(File* file)
 {
@@ -38,6 +41,74 @@ Graphs* graphs_init(File* file)
 	}
 
 	return graphs;
+}
+
+static int sortFunc(const void* a, const void* b) //TODO: remove
+{
+	return (*(Node**)a)->id - (*(Node**)b)->id;
+}
+
+void graphs_saveConns(Graphs* graphs, File* file)
+{
+	free(file->conns);
+	for (int i = 0; i < file->connStarts_arrayCount; i++)
+	{
+		free(file->connStarts[i]);
+	}
+	free(file->connStarts);
+	free(file->connStarts_lens);
+
+	file->conns = NULL;
+	file->conns_len = 0;
+	file->connStarts = NULL;
+	file->connStarts_lens = NULL;
+	file->connStarts_arrayCount = 0;
+
+	for (int i = 0; i < graphs->count; i++)
+	{
+		Graph* graph = graphs->graphs[i];
+		if (graph->nodeCount == 0) { continue; }
+
+		file->connStarts_arrayCount++;
+		file->connStarts = realloc(file->connStarts, file->connStarts_arrayCount * sizeof(int*));
+		file->connStarts_lens = realloc(file->connStarts_lens, file->connStarts_arrayCount * sizeof(int));
+
+		int** connStart = &file->connStarts[file->connStarts_arrayCount - 1];
+		int* connStartLen = &file->connStarts_lens[file->connStarts_arrayCount - 1];
+		*connStart = NULL;
+		*connStartLen = 0;
+
+		qsort(graph->nodes, graph->nodeCount, sizeof(Node*), &sortFunc); //TODO: remove
+		for (int j = 0; j < graph->nodeCount; j++)
+		{
+			Node* node = graph->nodes[j];
+			int id = node->id;
+
+			bool firstAdded = false;
+			for (int k = 0; k < node->connCount; k++)
+			{
+				Node* node2 = (Node*)node->conns[k];
+				if (node2->id < id) { continue; }
+				if (node2->id == id) { programError("graph.c", __LINE__); }
+
+				if (!firstAdded)
+				{
+					*connStart = realloc(*connStart, (*connStartLen + 1) * sizeof(int));
+					(*connStart)[*connStartLen] = file->conns_len;
+					(*connStartLen)++;
+
+					file->conns = realloc(file->conns, (file->conns_len + 1) * sizeof(int));
+					file->conns[file->conns_len] = id;
+					file->conns_len++;
+					firstAdded = true;
+				}
+
+				file->conns = realloc(file->conns, (file->conns_len + 1) * sizeof(int));
+				file->conns[file->conns_len] = node2->id;
+				file->conns_len++;
+			}
+		}
+	}
 }
 
 Graph* initGraph(File* file, int arrayPos, int lastSectionEnd)
@@ -140,4 +211,10 @@ void graphError(const char* message)
 {
 	fprintf(stderr, "Błąd przetwarzania grafu: %s\n", message);
 	exit(1);
+}
+
+void programError(const char* module, int line)
+{
+	fprintf(stderr, "Błąd programu! [%s:%d]\n", module, line);
+	exit(2);
 }
