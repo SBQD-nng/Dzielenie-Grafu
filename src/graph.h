@@ -1,32 +1,25 @@
 #ifndef _GRAPH_H_
 #define _GRAPH_H_
 
+#include "array.h"
 #include "file.h"
 
 typedef struct
 {
 	int id;
-	void** conns;
-	int connCount;
+	Array* conns; // of Node*
 } Node;
 
 typedef struct
 {
-	Node** nodes;
-	int nodeCount;
+	Array* nodes; // of Node*
 } Graph;
 
-typedef struct
-{
-	Graph** graphs;
-	int count;
-} Graphs;
 
+// initializes graphs - Array of Graph*
+extern Array* graphs_init(File* file);
 
-// initializes graphs
-extern Graphs* graphs_init(File* file);
-
-// saves connections from Graphs to File structure
-extern void graphs_saveConns(Graphs* graphs, File* file);
+// saves connections from Array of Graph* to File structure
+extern void graphs_saveConns(Array* graphs, File* file);
 
 #endif

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "array.h"
 
 
 // initializes graph structure
@@ -26,18 +27,16 @@ static void graphError(const char* message);
 static void programError(const char* module, int line);
 
 
-Graphs* graphs_init(File* file)
+Array* graphs_init(File* file)
 {
-	int count = file->connStarts_arrayCount;
+	Array* graphs = array_create(sizeof(Graph*), true);
 
-	Graphs* graphs = malloc(sizeof(Graphs));
-	graphs->graphs = malloc(count * sizeof(Graph*));
-	graphs->count = count;
-
-	for (int i = 0; i < file->connStarts_arrayCount; i++)
+	for (int i = 0; i < file->connStarts->len; i++)
 	{
-		int lastSectionEnd = (i + 1 < file->connStarts_arrayCount) ? file->connStarts[i + 1][0] : -1;
-		graphs->graphs[i] = initGraph(file, i, lastSectionEnd);
+		int lastSectionEnd = (i + 1 < file->connStarts->len)
+				? *(int*)array_get(array_get(file->connStarts, i + 1), 0)
+				: -1;
+		array_add(graphs, initGraph(file, i, lastSectionEnd));
 	}
 
 	return graphs;
@@ -48,64 +47,44 @@ static int sortFunc(const void* a, const void* b) //TODO: remove
 	return (*(Node**)a)->id - (*(Node**)b)->id;
 }
 
-void graphs_saveConns(Graphs* graphs, File* file)
+void graphs_saveConns(Array* graphs, File* file)
 {
-	free(file->conns);
-	for (int i = 0; i < file->connStarts_arrayCount; i++)
+	array_clear(file->conns);
+	for (int i = 0; i < file->connStarts->len; i++)
 	{
-		free(file->connStarts[i]);
+		array_free(array_get(file->connStarts, i));
 	}
-	free(file->connStarts);
-	free(file->connStarts_lens);
+	array_clear(file->connStarts);
 
-	file->conns = NULL;
-	file->conns_len = 0;
-	file->connStarts = NULL;
-	file->connStarts_lens = NULL;
-	file->connStarts_arrayCount = 0;
-
-	for (int i = 0; i < graphs->count; i++)
+	for (int i = 0; i < graphs->len; i++)
 	{
-		Graph* graph = graphs->graphs[i];
-		if (graph->nodeCount == 0) { continue; }
+		Graph* graph = array_get(graphs, i);
+		if (graph->nodes->len == 0) { continue; }
 
-		file->connStarts_arrayCount++;
-		file->connStarts = realloc(file->connStarts, file->connStarts_arrayCount * sizeof(int*));
-		file->connStarts_lens = realloc(file->connStarts_lens, file->connStarts_arrayCount * sizeof(int));
+		Array* connStart = array_create(sizeof(int), false);
+		array_add(file->connStarts, connStart);
 
-		int** connStart = &file->connStarts[file->connStarts_arrayCount - 1];
-		int* connStartLen = &file->connStarts_lens[file->connStarts_arrayCount - 1];
-		*connStart = NULL;
-		*connStartLen = 0;
-
-		qsort(graph->nodes, graph->nodeCount, sizeof(Node*), &sortFunc); //TODO: remove
-		for (int j = 0; j < graph->nodeCount; j++)
+		qsort(graph->nodes->arr, graph->nodes->len, sizeof(Node*), &sortFunc); //TODO: remove
+		for (int j = 0; j < graph->nodes->len; j++)
 		{
-			Node* node = graph->nodes[j];
+			Node* node = array_get(graph->nodes, j);
 			int id = node->id;
 
 			bool firstAdded = false;
-			for (int k = 0; k < node->connCount; k++)
+			for (int k = 0; k < node->conns->len; k++)
 			{
-				Node* node2 = (Node*)node->conns[k];
+				Node* node2 = array_get(node->conns, k);
 				if (node2->id < id) { continue; }
 				if (node2->id == id) { programError("graph.c", __LINE__); }
 
 				if (!firstAdded)
 				{
-					*connStart = realloc(*connStart, (*connStartLen + 1) * sizeof(int));
-					(*connStart)[*connStartLen] = file->conns_len;
-					(*connStartLen)++;
-
-					file->conns = realloc(file->conns, (file->conns_len + 1) * sizeof(int));
-					file->conns[file->conns_len] = id;
-					file->conns_len++;
+					array_add(connStart, &file->conns->len);
+					array_add(file->conns, &id);
 					firstAdded = true;
 				}
 
-				file->conns = realloc(file->conns, (file->conns_len + 1) * sizeof(int));
-				file->conns[file->conns_len] = node2->id;
-				file->conns_len++;
+				array_add(file->conns, &node2->id);
 			}
 		}
 	}
@@ -113,12 +92,13 @@ void graphs_saveConns(Graphs* graphs, File* file)
 
 Graph* initGraph(File* file, int arrayPos, int lastSectionEnd)
 {
-	Graph* graph = calloc(1, sizeof(Graph));
+	Graph* graph = malloc(sizeof(Graph));
+	graph->nodes = array_create(sizeof(Node*), true);
 
-	int* connStart = file->connStarts[arrayPos];
-	int connStartLen = file->connStarts_lens[arrayPos];
-	int* conns = file->conns;
-	int connsLen = file->conns_len;
+	int* connStart = ((Array*)array_get(file->connStarts, arrayPos))->arr;
+	int connStartLen = ((Array*)array_get(file->connStarts, arrayPos))->len;
+	int* conns = file->conns->arr;
+	int connsLen = file->conns->len;
 
 	if (lastSectionEnd == -1) { lastSectionEnd = connsLen; }
 
@@ -155,20 +135,23 @@ void addConn(Graph* graph, int a, int b)
 	Node* na = NULL;
 	Node* nb = NULL;
 
+	Node** nodes = graph->nodes->arr;
+	int nodeCount = graph->nodes->len;
+
 	// searching from the end, as node we try to find is more likely to be recently added
-	for (int i = graph->nodeCount - 1; i >= 0; i--)
+	for (int i = nodeCount - 1; i >= 0; i--)
 	{
-		if (graph->nodes[i]->id == a)
+		if (nodes[i]->id == a)
 		{
-			na = graph->nodes[i];
+			na = nodes[i];
 			break;
 		}
 	}
-	for (int i = graph->nodeCount - 1; i >= 0; i--)
+	for (int i = nodeCount - 1; i >= 0; i--)
 	{
-		if (graph->nodes[i]->id == b)
+		if (nodes[i]->id == b)
 		{
-			nb = graph->nodes[i];
+			nb = nodes[i];
 			break;
 		}
 	}
@@ -184,26 +167,21 @@ void addConnToNode(Node* node, Node* toAdd, bool checkForDuplicate)
 {
 	if (checkForDuplicate)
 	{
-		for (int i = 0; i < node->connCount; i++)
+		Node** conns = node->conns->arr;
+		for (int i = 0; i < node->conns->len; i++)
 		{
-			if (node->conns[i] == toAdd) { graphError("Próba ponownego połączenia wierzchołków!"); }
+			if (conns[i] == toAdd) { graphError("Próba ponownego połączenia wierzchołków!"); }
 		}
 	}
-
-	node->conns = realloc(node->conns, (node->connCount + 1) * sizeof(Node*));
-	node->conns[node->connCount] = toAdd;
-	node->connCount++;
+	array_add(node->conns, toAdd);
 }
 
 Node* addNode(Graph* graph, int id)
 {
 	Node* node = calloc(1, sizeof(Node));
 	node->id = id;
-
-	graph->nodes = realloc(graph->nodes, (graph->nodeCount + 1) * sizeof(Node*));
-	graph->nodes[graph->nodeCount] = node;
-	graph->nodeCount++;
-
+	node->conns = array_create(sizeof(Node*), true);
+	array_add(graph->nodes, node);
 	return node;
 }
 

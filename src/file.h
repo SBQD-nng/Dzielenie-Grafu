@@ -2,23 +2,17 @@
 #define _FILE_H_
 
 #include <stdbool.h>
+#include "array.h"
 
 typedef struct
 {
 	int maxNodes;
 
-	int* xCoords;
-	int xCoords_len;
+	Array* xCoords; // of int
+	Array* xCoordsStart; // of int
 
-	int* xCoordsStart;
-	int xCoordsStart_len;
-
-	int* conns;
-	int conns_len;
-
-	int** connStarts;
-	int* connStarts_lens;
-	int connStarts_arrayCount;
+	Array* conns; // of int
+	Array* connStarts; // of Array* of int
 } File;
 
 
