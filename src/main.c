@@ -2,6 +2,7 @@
 #include "arguments.h"
 #include "file.h"
 #include "graph.h"
+#include "simpleCut.h"
 
 int main(int argc, char** argv)
 {
@@ -13,10 +14,11 @@ int main(int argc, char** argv)
 	}
 
 	File* file = file_load(args->inputFile);
-	file_save(file, args->outputFile, 123, args->useBinaryMode);
 
 	Array* graphs = graphs_init(file);
+	int successes = simpleCutGraphs(graphs, args->divisions, args->maxDiff);
+
 	graphs_saveConns(graphs, file);
-	file_save(file, "graf_przetworzony.out", 999, args->useBinaryMode);
+	file_save(file, args->outputFile, successes, args->useBinaryMode);
 	return 0;
 }

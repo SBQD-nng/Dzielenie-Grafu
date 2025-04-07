@@ -1,13 +1,18 @@
 #ifndef _GRAPH_H_
 #define _GRAPH_H_
 
+#include <stdbool.h>
 #include "array.h"
 #include "file.h"
+#include "list.h"
 
 typedef struct
 {
 	int id;
-	Array* conns; // of Node*
+	List* conns; // of Node*
+
+	bool simpleCut_secondPart;
+	bool simpleCut_mark;
 } Node;
 
 typedef struct

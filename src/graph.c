@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "array.h"
+#include "list.h"
 
 
 // initializes graph structure
@@ -71,10 +72,15 @@ void graphs_saveConns(Array* graphs, File* file)
 			int id = node->id;
 
 			bool firstAdded = false;
-			for (int k = 0; k < node->conns->len; k++)
+			ListNode* conns = node->conns->first;
+			while (conns != NULL)
 			{
-				Node* node2 = array_get(node->conns, k);
-				if (node2->id < id) { continue; }
+				Node* node2 = conns->val;
+				if (node2->id < id)
+				{
+					conns = conns->next;
+					continue;
+				}
 				if (node2->id == id) { programError("graph.c", __LINE__); }
 
 				if (!firstAdded)
@@ -85,6 +91,7 @@ void graphs_saveConns(Array* graphs, File* file)
 				}
 
 				array_add(file->conns, &node2->id);
+				conns = conns->next;
 			}
 		}
 	}
@@ -167,20 +174,21 @@ void addConnToNode(Node* node, Node* toAdd, bool checkForDuplicate)
 {
 	if (checkForDuplicate)
 	{
-		Node** conns = node->conns->arr;
-		for (int i = 0; i < node->conns->len; i++)
+		ListNode* conns = node->conns->first;
+		while (conns != NULL)
 		{
-			if (conns[i] == toAdd) { graphError("Próba ponownego połączenia wierzchołków!"); }
+			if (conns->val == toAdd) { graphError("Próba ponownego połączenia wierzchołków!"); }
+			conns = conns->next;
 		}
 	}
-	array_add(node->conns, toAdd);
+	list_append(node->conns, toAdd);
 }
 
 Node* addNode(Graph* graph, int id)
 {
 	Node* node = calloc(1, sizeof(Node));
 	node->id = id;
-	node->conns = array_create(sizeof(Node*), true);
+	node->conns = list_new();
 	array_add(graph->nodes, node);
 	return node;
 }

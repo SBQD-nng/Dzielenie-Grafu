@@ -94,7 +94,8 @@ void file_save(File* file, const char* name, int successes, bool binMode)
 
 	for (int i = 0; i < file->connStarts->len; i++)
 	{
-		saveArray(stream, array_get(file->connStarts, i));
+		Array* arr = array_get(file->connStarts, i);
+		if (arr->len != 0) saveArray(stream, arr);
 	}
 }
 
