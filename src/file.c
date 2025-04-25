@@ -1,8 +1,9 @@
 #include "file.h"
-#include "array.h"
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include "array.h"
+#include "errors.h"
 
 #define BUF_SIZE 2048
 
@@ -37,11 +38,7 @@ static void formatError(int line);
 File* file_load(const char* name)
 {
 	FILE* stream = fopen(name, "r");
-	if (stream == NULL)
-	{
-		fprintf(stderr, "Błąd otwierania pliku wejściowego\n");
-		exit(-1);
-	}
+	if (stream == NULL) { error("Błąd otwierania pliku wejściowego!", NULL, "file.c", __LINE__); }
 
 	File* file = malloc(sizeof(File));
 
@@ -70,11 +67,7 @@ File* file_load(const char* name)
 void file_save(File* file, const char* name, int successes, bool binMode)
 {
 	FILE* stream = name != NULL ? fopen(name, binMode ? "wb" : "w") : stdout;
-	if (stream == NULL)
-	{
-		fprintf(stderr, "Błąd otwierania pliku wyjściowego\n");
-		exit(-1);
-	}
+	if (stream == NULL) { error("Błąd otwierania pliku wyjściowego!", NULL, "file.c", __LINE__); }
 
 	void (*saveArray)(FILE*, Array*) = binMode ? saveBinArray : saveTextArray;
 
@@ -197,6 +190,5 @@ void writeInt(FILE* stream, int val)
 
 void formatError(int line)
 {
-	fprintf(stderr, "Błąd formatu pliku wejściowego! [file.c:%d]\n", line);
-	exit(-1);
+	error("Błąd formatu pliku wejściowego!", NULL, "file.c", line);
 }

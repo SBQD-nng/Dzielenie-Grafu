@@ -7,6 +7,7 @@ List* list_new()
 	List* list = malloc(sizeof(List));
 	list->first = NULL;
 	list->last = NULL;
+	list->size = 0;
 	return list;
 }
 
@@ -44,7 +45,34 @@ ListNode* list_insert(List* list, ListNode* prev, void* val)
 		node->next = oldFirst;
 	}
 
+	list->size++;
 	return node;
+}
+
+List* list_merge(List* list1, List* list2)
+{
+	// if first is empty
+	if (list1->first == NULL)
+	{
+		free(list1);
+		return list2;
+	}
+
+	// if second is empty
+	if (list2->first == NULL)
+	{
+		free(list2);
+		return list1;
+	}
+
+	list1->last->next = list2->first;
+	list2->first->prev = list1->last;
+
+	list1->last = list2->last;
+	list1->size += list2->size;
+	free(list2);
+
+	return list1;
 }
 
 void list_remove(List* list, ListNode* node)
@@ -56,4 +84,18 @@ void list_remove(List* list, ListNode* node)
 	if (list->last == node) list->last = node->prev;
 
 	free(node);
+	list->size--;
+}
+
+void list_free(List* list)
+{
+	ListNode* node = list->first;
+	while (node != NULL)
+	{
+		ListNode* next = node->next;
+		free(node);
+		node = next;
+	}
+
+	free(list);
 }

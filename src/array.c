@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define INITIAL_SIZE 16
+#define INITIAL_SIZE 8
 
 Array* array_create(int elementSize, bool ofPointers)
 {

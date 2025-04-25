@@ -8,11 +8,12 @@
 
 typedef struct
 {
-	int id;
+	int id, pos;
 	List* conns; // of Node*
+	bool mark;
 
 	bool simpleCut_secondPart;
-	bool simpleCut_mark;
+	//int spectralCut_id;
 } Node;
 
 typedef struct
@@ -21,10 +22,10 @@ typedef struct
 } Graph;
 
 
-// initializes graphs - Array of Graph*
-extern Array* graphs_init(File* file);
+// initializes graphs - List of Graph*
+extern List* graphs_init(File* file);
 
-// saves connections from Array of Graph* to File structure
-extern void graphs_saveConns(Array* graphs, File* file);
+// saves connections from List of Graph* to File structure
+extern void graphs_saveConns(List* graphs, File* file);
 
 #endif

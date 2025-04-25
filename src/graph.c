@@ -1,10 +1,13 @@
 #include "graph.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include "array.h"
 #include "list.h"
+#include "errors.h"
 
+
+// takes Node** as arguments; compares two nodes by id value
+static int sortFunc(const void* a, const void* b);
 
 // initializes graph structure
 // lastSectionEnd marks end of last section - for multiple graphs it's beggining
@@ -22,33 +25,28 @@ static void addConnToNode(Node* node, Node* toAdd, bool checkForDuplicate);
 static Node* addNode(Graph* graph, int id);
 
 // Show message and exit because of invalid graph structure
-static void graphError(const char* message);
+static void graphError(const char* message, int line);
 
 // Show message that something went wrong with program
-static void programError(const char* module, int line);
+static void programError(int line);
 
 
-Array* graphs_init(File* file)
+List* graphs_init(File* file)
 {
-	Array* graphs = array_create(sizeof(Graph*), true);
+	List* graphs = list_new();
 
 	for (int i = 0; i < file->connStarts->len; i++)
 	{
 		int lastSectionEnd = (i + 1 < file->connStarts->len)
 				? *(int*)array_get(array_get(file->connStarts, i + 1), 0)
 				: -1;
-		array_add(graphs, initGraph(file, i, lastSectionEnd));
+		list_append(graphs, initGraph(file, i, lastSectionEnd));
 	}
 
 	return graphs;
 }
 
-static int sortFunc(const void* a, const void* b) //TODO: remove
-{
-	return (*(Node**)a)->id - (*(Node**)b)->id;
-}
-
-void graphs_saveConns(Array* graphs, File* file)
+void graphs_saveConns(List* graphs, File* file)
 {
 	array_clear(file->conns);
 	for (int i = 0; i < file->connStarts->len; i++)
@@ -57,15 +55,16 @@ void graphs_saveConns(Array* graphs, File* file)
 	}
 	array_clear(file->connStarts);
 
-	for (int i = 0; i < graphs->len; i++)
+	ListNode* listNode = graphs->first;
+	while (listNode != NULL)
 	{
-		Graph* graph = array_get(graphs, i);
+		Graph* graph = listNode->val;
 		if (graph->nodes->len == 0) { continue; }
 
 		Array* connStart = array_create(sizeof(int), false);
 		array_add(file->connStarts, connStart);
 
-		qsort(graph->nodes->arr, graph->nodes->len, sizeof(Node*), &sortFunc); //TODO: remove
+		qsort(graph->nodes->arr, graph->nodes->len, sizeof(Node*), &sortFunc);
 		for (int j = 0; j < graph->nodes->len; j++)
 		{
 			Node* node = array_get(graph->nodes, j);
@@ -81,7 +80,7 @@ void graphs_saveConns(Array* graphs, File* file)
 					conns = conns->next;
 					continue;
 				}
-				if (node2->id == id) { programError("graph.c", __LINE__); }
+				if (node2->id == id) { programError(__LINE__); }
 
 				if (!firstAdded)
 				{
@@ -94,7 +93,14 @@ void graphs_saveConns(Array* graphs, File* file)
 				conns = conns->next;
 			}
 		}
+
+		listNode = listNode->next;
 	}
+}
+
+int sortFunc(const void* a, const void* b)
+{
+	return (*(Node**)a)->id - (*(Node**)b)->id;
 }
 
 Graph* initGraph(File* file, int arrayPos, int lastSectionEnd)
@@ -114,8 +120,8 @@ Graph* initGraph(File* file, int arrayPos, int lastSectionEnd)
 		int start = connStart[i];
 		int end = (i + 1 < connStartLen) ? connStart[i + 1] : lastSectionEnd;
 
-		if (start == end || start + 1 == end) { graphError("Pusta sekcja połączeń!"); }
-		if (start > end || end > connsLen || start < 0) { graphError("Błędna konfiguracja sekcji połączeń!"); }
+		if (start == end || start + 1 == end) { graphError("Pusta sekcja połączeń!", __LINE__); }
+		if (start > end || end > connsLen || start < 0) { graphError("Błędna konfiguracja sekcji połączeń!", __LINE__); }
 
 		int startVal = conns[start];
 
@@ -130,7 +136,7 @@ Graph* initGraph(File* file, int arrayPos, int lastSectionEnd)
 
 void addConn(Graph* graph, int a, int b)
 {
-	if (a == b) { graphError("Próba połączenia wierzchołka z samym sobą!"); }
+	if (a == b) { graphError("Próba połączenia wierzchołka z samym sobą!", __LINE__); }
 
 	if (a > b)
 	{
@@ -177,7 +183,7 @@ void addConnToNode(Node* node, Node* toAdd, bool checkForDuplicate)
 		ListNode* conns = node->conns->first;
 		while (conns != NULL)
 		{
-			if (conns->val == toAdd) { graphError("Próba ponownego połączenia wierzchołków!"); }
+			if (conns->val == toAdd) { graphError("Próba ponownego połączenia wierzchołków!", __LINE__); }
 			conns = conns->next;
 		}
 	}
@@ -188,19 +194,18 @@ Node* addNode(Graph* graph, int id)
 {
 	Node* node = calloc(1, sizeof(Node));
 	node->id = id;
+	node->pos = graph->nodes->len;
 	node->conns = list_new();
 	array_add(graph->nodes, node);
 	return node;
 }
 
-void graphError(const char* message)
+void graphError(const char* message, int line)
 {
-	fprintf(stderr, "Błąd przetwarzania grafu: %s\n", message);
-	exit(1);
+	error("Błąd przetwarzania grafu", message, "graph.c", line);
 }
 
-void programError(const char* module, int line)
+void programError(int line)
 {
-	fprintf(stderr, "Błąd programu! [%s:%d]\n", module, line);
-	exit(2);
+	error(ERROR_BUG, NULL, "graph.c", line);
 }
