@@ -6,7 +6,7 @@
 #include "list.h"
 
 
-// perform cut on graph - returns array of graphs after cutting
+// performs cut on graph - returns array of graphs after cutting
 static List* performCut(Cut* cut);
 
 // creates list of graphs from old list of nodes that were splitted
@@ -19,7 +19,7 @@ static void addNodesToGraph(Node* node, Array* array);
 static void addCutToList(List* list, Cut* cut);
 
 
-int cutGraphs(List** graphs, int n, double maxDiff, Cut* (*findCut)(ListNode*, double))
+int cutGraphs(List** graphs, int n, double maxDiff, Cut* (*findCut)(ListNode*, double, int), int specialArg)
 {
 	if (n < 1) { return 0; }
 	maxDiff /= 100.0;
@@ -28,7 +28,7 @@ int cutGraphs(List** graphs, int n, double maxDiff, Cut* (*findCut)(ListNode*, d
 	ListNode* graphsNode = (*graphs)->first;
 	while (graphsNode != NULL)
 	{
-		Cut* cut = findCut(graphsNode, maxDiff);
+		Cut* cut = findCut(graphsNode, maxDiff, specialArg);
 		if (cut != NULL) { addCutToList(cutList, cut); }
 		graphsNode = graphsNode->next;
 	}
@@ -59,7 +59,7 @@ int cutGraphs(List** graphs, int n, double maxDiff, Cut* (*findCut)(ListNode*, d
 		// check new graphs for cuts and add to cutList if valid
 		while (firstNewGraph != NULL)
 		{
-			Cut* newCut = findCut(firstNewGraph, maxDiff);
+			Cut* newCut = findCut(firstNewGraph, maxDiff, specialArg);
 			if (newCut != NULL) { addCutToList(cutList, newCut); }
 			firstNewGraph = firstNewGraph->next;
 		}

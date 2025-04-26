@@ -7,6 +7,6 @@
 // find simple cut that requires lowest number of cuts for given graph
 // and is in maxDiff range (maxDiff shouldn't be in percentages, but percentages/100)
 // returns NULL when it isn't possible
-extern Cut* findSimpleCut(ListNode* listNode, double maxDiff);
+extern Cut* findSimpleCut(ListNode* listNode, double maxDiff, int verifyConnectivity);
 
 #endif

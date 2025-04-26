@@ -8,7 +8,11 @@
 #include "cut.h"
 
 
-Cut* findSimpleCut(ListNode* listNode, double maxDiff)
+// recursively marks all connected nodes on the same side
+static void markAllConns(Node* node);
+
+
+Cut* findSimpleCut(ListNode* listNode, double maxDiff, int verifyConnectivity)
 {
 	Graph* graph = listNode->val;
 	int nodeCount = graph->nodes->len;
@@ -28,6 +32,8 @@ Cut* findSimpleCut(ListNode* listNode, double maxDiff)
 	while (1)
 	{
 		int firstPartSize = nodeCount - secondPartSize;
+		Node* anyFromFirst = NULL;
+		Node* anyFromSecond = NULL;
 
 		if (canBeCut(firstPartSize, secondPartSize, maxDiff))
 		{
@@ -38,8 +44,16 @@ Cut* findSimpleCut(ListNode* listNode, double maxDiff)
 				// reset marks
 				nodes[i]->mark = false;
 
-				// if it's on the second side, skip it, so it won't be counted two times
-				if (nodes[i]->simpleCut_secondPart) { continue; }
+				if (nodes[i]->simpleCut_secondPart)
+				{
+					anyFromSecond = nodes[i];
+					// if it's on the second side, skip it, so it won't be counted two times
+					continue;
+				}
+				else
+				{
+					anyFromFirst = nodes[i];
+				}
 
 				ListNode* conns = nodes[i]->conns->first;
 				while (conns != NULL)
@@ -53,12 +67,33 @@ Cut* findSimpleCut(ListNode* listNode, double maxDiff)
 			// if new lowest number of cuts, verify connections and copy if valid
 			if (cuts < cut->cuts)
 			{
-				// copy configuration to SimpleCut structure
-				for (int i = 0; i < nodeCount; i++)
+				bool validGraph = true;
+
+				if (verifyConnectivity != 0)
 				{
-					cut->sideArray[i] = nodes[i]->simpleCut_secondPart;
+					markAllConns(anyFromFirst);
+					markAllConns(anyFromSecond);
+
+					for (int i = 0; i < nodeCount; i++)
+					{
+						// if it wasn't marked it means it's separated from the rest of graph, so it isn't valid graph
+						if (!nodes[i]->mark)
+						{
+							validGraph = false;
+							break;
+						}
+					}
 				}
-				cut->cuts = cuts;
+
+				if (validGraph)
+				{
+					// copy configuration to SimpleCut structure
+					for (int i = 0; i < nodeCount; i++)
+					{
+						cut->sideArray[i] = nodes[i]->simpleCut_secondPart;
+					}
+					cut->cuts = cuts;
+				}
 			}
 		}
 
@@ -91,4 +126,24 @@ Cut* findSimpleCut(ListNode* listNode, double maxDiff)
 	}
 
 	return cut->cuts == INT_MAX ? NULL : cut;
+}
+
+void markAllConns(Node* node)
+{
+	node->mark = true;
+	bool secondPart = node->simpleCut_secondPart;
+
+	ListNode* conns = node->conns->first;
+	while (conns != NULL)
+	{
+		Node* node2 = (Node*)conns->val;
+
+		// mark only if it's on the same side and wasn't yet marked
+		if (secondPart == node2->simpleCut_secondPart && !node2->mark)
+		{
+			markAllConns(node2);
+		}
+
+		conns = conns->next;
+	}
 }

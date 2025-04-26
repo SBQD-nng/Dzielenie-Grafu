@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "list.h"
 
+
 typedef struct
 {
 	// list node of list of graphs
@@ -19,7 +20,8 @@ typedef struct
 
 // cuts graphs using given findCut function with given parameters
 // returns number of successful cuts and saves cutted graphs into list
-extern int cutGraphs(List** graphs, int n, double maxDiff, Cut* (*findCut)(ListNode*, double));
+// value in specialArg will be passed to findCut and its purpose depends on this function
+extern int cutGraphs(List** graphs, int n, double maxDiff, Cut* (*findCut)(ListNode*, double, int), int specialArg);
 
 // calculates difference between divided graph sizes and checks if it can be divided
 // maxDiff shouldn't be in percentages, but percentages/100

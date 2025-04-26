@@ -6,6 +6,7 @@
 #include "file.h"
 #include "list.h"
 
+
 typedef struct
 {
 	int id, pos;
@@ -13,7 +14,6 @@ typedef struct
 	bool mark;
 
 	bool simpleCut_secondPart;
-	//int spectralCut_id;
 } Node;
 
 typedef struct

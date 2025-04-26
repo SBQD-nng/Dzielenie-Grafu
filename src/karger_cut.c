@@ -34,7 +34,7 @@ typedef struct
 {
 	MergedNode* a;
 	MergedNode* b;
-	int toCut;
+	int toCut; // number of required cuts; same as a->conns->size and b->conns->size
 } MergedPair;
 
 
@@ -63,18 +63,22 @@ static void redirectConns(MergedNode* node, MergedNode* redirectFrom, MergedNode
 // removes memory of merged node
 static void freeMergedNode(MergedNode* node);
 
+// returs proper number of iterations number from iterations argument
+// if iterations > 0 it will return it, else it will calculate it based on graph node count
+static int getIterations(int iter, int nodeCount);
 
-Cut* findKargerCut(ListNode* listNode, double maxDiff)
+
+Cut* findKargerCut(ListNode* listNode, double maxDiff, int iter)
 {
 	Graph* graph = listNode->val;
 	int nodeCount = graph->nodes->len;
 	if (nodeCount < 2) { return NULL; }
+	iter = getIterations(iter, nodeCount);
 
 	MergedPair minCut;
 	int minCutCount = INT_MAX;
 
-	//for (int i = 0; i < iterations; i++)
-	for (int i = 0; i < 1; i++) //TODO: todo
+	for (int i = 0; i < iter; i++)
 	{
 		MergedPair results = kargerCutIter(graph);
 		int aSize = results.a->realNodes->size;
@@ -282,4 +286,16 @@ void freeMergedNode(MergedNode* node)
 	list_free(node->conns);
 	free(node->connectedWith);
 	free(node);
+}
+
+int getIterations(int iter, int nodeCount)
+{
+	if (iter > 0) { return iter; }
+
+	// 50 * (nodeCount / 10)^2
+	int x = nodeCount / 10;
+	int defIter = 50 * x * x;
+
+	// max(50, defIter)
+	return defIter < 50 ? 50 : defIter;
 }

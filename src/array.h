@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 
+
 typedef struct
 {
 	void* arr;
